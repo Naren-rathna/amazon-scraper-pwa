@@ -155,17 +155,19 @@ class AmazonScraper {
 
         // Look in technical details
         const techDetails = $('#tech tbody tr, #productDetails_detailBullets_sections1 tbody tr');
+        let foundModel = '';
         techDetails.each((i, row) => {
             const label = $(row).find('td:first-child, th:first-child').text().trim().toLowerCase();
             if (label.includes('model') && !label.includes('number')) {
                 const value = $(row).find('td:last-child').text().trim();
                 if (value && value !== 'N/A' && value !== '-') {
-                    return value;
+                    foundModel = value;
+                    return false; // Break the loop
                 }
             }
         });
 
-        return '';
+        return foundModel;
     }
 
     extractASIN($, url) {
@@ -213,7 +215,7 @@ class AmazonScraper {
         // Extract original price
         for (const selector of originalPriceSelectors) {
             const price = $(selector).first().text().trim();
-            if (price && price.includes(')) {
+            if (price && price.includes('$')) {
                 pricing.originalPrice = price;
                 break;
             }
@@ -222,7 +224,7 @@ class AmazonScraper {
         // Extract offer price
         for (const selector of offerPriceSelectors) {
             const price = $(selector).first().text().trim();
-            if (price && price.includes(')) {
+            if (price && price.includes('$')) {
                 pricing.offerPrice = price;
                 break;
             }
@@ -256,7 +258,7 @@ class AmazonScraper {
                 const offer = parseFloat(pricing.offerPrice.replace(/[^0-9.]/g, ''));
                 const saved = original - offer;
                 if (saved > 0) {
-                    pricing.amountSaved = `${saved.toFixed(2)}`;
+                    pricing.amountSaved = `$${saved.toFixed(2)}`;
                     
                     // Calculate percentage if not already found
                     if (!pricing.offerPercentage) {
@@ -607,17 +609,12 @@ app.post('/api/scrape', async (req, res) => {
 
         const productData = await scraper.scrapeProduct(url);
         
-        res.json({
-            success: true,
-            data: productData,
-            scrapedAt: new Date().toISOString()
-        });
+        res.json(productData);
 
     } catch (error) {
         console.error('Scrape API error:', error);
         res.status(500).json({
-            error: error.message || 'Failed to scrape product',
-            success: false
+            error: error.message || 'Failed to scrape product'
         });
     }
 });
