@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Product Scraper</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#232F3E">
+    <link rel="icon" type="image/png" sizes="192x192" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiBmaWxsPSIjMjMyRjNFIi8+CjxwYXRoIGQ9Ik05NiA0OEM3NC4xMjEgNDggNTYgNjYuMTIxIDU2IDg4VjEwNEM1NiAxMjUuODc5IDc0LjEyMSAxNDQgOTYgMTQ0QzExNy44NzkgMTQ0IDEzNiAxMjUuODc5IDEzNiAxMDRWODhDMTM2IDY2LjEyMSAxMTcuODc5IDQ4IDk2IDQ4WiIgZmlsbD0iI0ZGOTkwMCIvPgo8L3N2Zz4K">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">
+                <span class="logo-icon">🛒</span>
+                Amazon Product Scraper
+            </h1>
+            <button class="install-btn" id="installBtn" style="display: none;">
+                📱 Install App
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- URL Input Section -->
+            <section class="url-input-section">
+                <div class="input-group">
+                    <input 
+                        type="url" 
+                        id="productUrl" 
+                        placeholder="Enter Amazon product URL..." 
+                        class="url-input"
+                        autocomplete="url"
+                    >
+                    <button id="extractBtn" class="extract-btn">
+                        <span class="btn-text">Extract</span>
+                        <div class="spinner" style="display: none;"></div>
+                    </button>
+                </div>
+                <div id="urlError" class="error-message" style="display: none;"></div>
+            </section>
+
+            <!-- Product Editor Section -->
+            <section id="productEditor" class="product-editor" style="display: none;">
+                <div class="editor-header">
+                    <h2>Edit Product Details</h2>
+                    <div class="editor-actions">
+                        <button id="saveBtn" class="save-btn">💾 Save Product</button>
+                        <button id="cancelBtn" class="cancel-btn">❌ Cancel</button>
+                    </div>
+                </div>
+
+                <form id="productForm" class="product-form">
+                    <div class="form-grid">
+                        <!-- Basic Info -->
+                        <div class="form-group">
+                            <label for="productTitle">Product Title</label>
+                            <textarea id="productTitle" rows="2" placeholder="Product title..."></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="productBrand">Brand</label>
+                                <input type="text" id="productBrand" placeholder="Brand name...">
+                            </div>
+                            <div class="form-group">
+                                <label for="productModel">Model</label>
+                                <input type="text" id="productModel" placeholder="Model name...">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="productASIN">ASIN</label>
+                                <input type="text" id="productASIN" placeholder="ASIN...">
+                            </div>
+                            <div class="form-group">
+                                <label for="productRating">Rating</label>
+                                <div class="rating-input">
+                                    <input type="number" id="productRating" step="0.1" min="0" max="5" placeholder="4.5">
+                                    <input type="number" id="ratingCount" placeholder="Reviews count">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pricing -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="originalPrice">Original Price</label>
+                                <input type="text" id="originalPrice" placeholder="$99.99">
+                            </div>
+                            <div class="form-group">
+                                <label for="offerPrice">Offer Price</label>
+                                <input type="text" id="offerPrice" placeholder="$79.99">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="offerPercentage">Discount %</label>
+                                <input type="text" id="offerPercentage" placeholder="20%">
+                            </div>
+                            <div class="form-group">
+                                <label for="amountSaved">Amount Saved</label>
+                                <input type="text" id="amountSaved" placeholder="$20.00">
+                            </div>
+                        </div>
+
+                        <!-- Colors/Types -->
+                        <div class="form-group">
+                            <label for="availableColors">Available Colors/Types</label>
+                            <div id="colorChips" class="chip-container"></div>
+                            <input type="text" id="colorInput" placeholder="Type color/type and press Enter...">
+                        </div>
+
+                        <!-- Categories -->
+                        <div class="form-group">
+                            <label for="categories">Categories</label>
+                            <div id="categoryChips" class="chip-container"></div>
+                            <input type="text" id="categoryInput" placeholder="Add category and press Enter...">
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="form-group">
+                            <label for="tags">Tags</label>
+                            <div id="tagChips" class="chip-container"></div>
+                            <input type="text" id="tagInput" placeholder="Add tag and press Enter...">
+                        </div>
+
+                        <!-- About Item -->
+                        <div class="form-group">
+                            <label for="aboutItem">About This Item</label>
+                            <textarea id="aboutItem" rows="4" placeholder="Product description..."></textarea>
+                        </div>
+
+                        <!-- Technical Data -->
+                        <div class="form-group">
+                            <label for="technicalData">Technical Specifications</label>
+                            <textarea id="technicalData" rows="4" placeholder="Technical specifications..."></textarea>
+                        </div>
+
+                        <!-- Images -->
+                        <div class="form-group">
+                            <label>Product Images</label>
+                            <div id="imagePreview" class="image-preview"></div>
+                            <div id="imageDownloadStatus" class="download-status"></div>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Search and Filter Section -->
+            <section class="search-section">
+                <div class="search-controls">
+                    <div class="search-group">
+                        <input type="text" id="searchInput" placeholder="Search products..." class="search-input">
+                        <button id="searchBtn" class="search-btn">🔍</button>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <select id="brandFilter" class="filter-select">
+                            <option value="">All Brands</option>
+                        </select>
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="">All Categories</option>
+                        </select>
+                        <button id="clearFilters" class="clear-filters-btn">Clear Filters</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Products List Section -->
+            <section id="productsSection" class="products-section">
+                <div class="section-header">
+                    <h2>Saved Products (<span id="productCount">0</span>)</h2>
+                    <div class="view-controls">
+                        <button id="exportBtn" class="export-btn">📤 Export All</button>
+                        <button id="clearAllBtn" class="clear-all-btn">🗑️ Clear All</button>
+                    </div>
+                </div>
+                
+                <div id="productsList" class="products-grid">
+                    <div class="empty-state">
+                        <div class="empty-icon">📦</div>
+                        <h3>No products scraped yet</h3>
+                        <p>Enter an Amazon product URL above to get started!</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p id="loadingText">Extracting product data...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Product Detail Modal -->
+    <div id="productModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Product Details</h2>
+                <button class="modal-close" id="modalClose">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Product details will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button id="modalEdit" class="btn-primary">✏️ Edit</button>
+                <button id="modalDelete" class="btn-danger">🗑️ Delete</button>
+                <button id="modalDownload" class="btn-secondary">💾 Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+
+        // PWA Install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'block';
+        });
+
+        document.getElementById('installBtn').addEventListener('click', () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installBtn').style.display = 'none';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

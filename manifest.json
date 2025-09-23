@@ -1,0 +1,44 @@
+{
+  "name": "Amazon Product Scraper",
+  "short_name": "AmazonScraper",
+  "description": "A powerful Progressive Web App for scraping and managing Amazon product information with advanced filtering and export capabilities.",
+  "version": "1.0.0",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#232F3E",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["productivity", "shopping", "utilities"],
+  "screenshots": [
+    {
+      "src": "/images/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Desktop view of the Amazon Product Scraper"
+    },
+    {
+      "src": "/images/screenshot-narrow.png", 
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile view of the Amazon Product Scraper"
+    }
+  ],
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjMjMyRjNFIi8+CjxwYXRoIGQ9Ik0yNCA3QzE4LjQ3NyA3IDE0IDExLjQ3NyAxNCAzN1YyNkMxNCAzMS41MjMgMTguNDc3IDM2IDI0IDM2QzI5LjUyMyAzNiAzNCAzMS41MjMgMzQgMjZWMTdDMzQgMTEuNDc3IDI5LjUyMyA3IDI0IDdaIiBmaWxsPSIjRkY5OTAwIi8+CjxwYXRoIGQ9Ik0xMiAzNkMxMiAzOC4yMDkxIDEzLjc5MDkgNDAgMTYgNDBIMzJDMzQuMjA5MSA0MCAzNiAzOC4yMDkxIDM2IDM2VjM0SDEyVjM2WiIgZmlsbD0iI0ZGOTkwMCIvPgo8L3N2Zz4K",
+      "sizes": "48x48",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzIiIGhlaWdodD0iNzIiIHZpZXdCb3g9IjAgMCA3MiA3MiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjcyIiBoZWlnaHQ9IjcyIiBmaWxsPSIjMjMyRjNFIi8+CjxwYXRoIGQ9Ik0zNiAxMUMyNy43MTU3IDExIDIxIDE3LjcxNTcgMjEgMjZWMzlDMjEgNDcuMjg0MyAyNy43MTU3IDU0IDM2IDU0QzQ0LjI4NDMgNTQgNTEgNDcuMjg0MyA1MSAzOVYyNkM1MSAxNy43MTU3IDQ0LjI4NDMgMTEgMzYgMTFaIiBmaWxsPSIjRkY5OTAwIi8+CjxwYXRoIGQ9Ik0xOCA1NEMxOCA1Ny4zMTM3IDIwLjY4NjMgNjAgMjQgNjBINDhDNTEuMzEzNyA2MCA1NCA1Ny4zMTM3IDU0IDU0VjUxSDE4VjU0WiIgZmlsbD0iI0ZGOTkwMCIvPgo8L3N2Zz4K",
+      "sizes": "72x72",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5Ni
