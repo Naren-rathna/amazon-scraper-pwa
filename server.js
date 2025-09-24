@@ -15,7 +15,19 @@ const pipelineAsync = promisify(pipeline);
 // ===== MIDDLEWARE =====
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve static files with proper MIME types
+app.use(express.static(__dirname, {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        } else if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        } else if (path.endsWith('.json')) {
+            res.setHeader('Content-Type', 'application/json');
+        }
+    }
+}));
 
 // Create downloads directory if it doesn't exist
 const DOWNLOADS_DIR = path.join(__dirname, 'downloads');
@@ -193,84 +205,140 @@ class AmazonScraper {
     extractPricing($) {
         const pricing = {};
 
-        // Original price selectors
-        const originalPriceSelectors = [
-            '.a-price.a-text-price .a-offscreen',
-            '.a-text-strike .a-offscreen',
-            '.a-price-was .a-offscreen',
-            '[data-cy="original-price"]',
-            '.a-text-price'
-        ];
+        // Try multiple approaches for price extraction
+        console.log('Extracting pricing information...');
 
-        // Current/offer price selectors
-        const offerPriceSelectors = [
-            '.a-price.a-text-normal .a-offscreen',
-            '.a-price-current .a-offscreen',
-            '.a-price .a-offscreen',
-            '[data-cy="price-recipe"] .a-price .a-offscreen',
-            '#apex_desktop .a-price .a-offscreen',
-            '.a-price-whole'
-        ];
+        // Method 1: Standard Amazon price selectors
+        const priceSelectors = {
+            current: [
+                '.a-price.a-text-normal .a-offscreen',
+                '.a-price-current .a-offscreen', 
+                '.a-price .a-offscreen',
+                '#apex_desktop .a-price .a-offscreen',
+                '.a-price-whole',
+                '#price_inside_buybox',
+                '.a-price-symbol + .a-price-whole'
+            ],
+            original: [
+                '.a-price.a-text-price .a-offscreen',
+                '.a-text-strike .a-offscreen',
+                '.a-price-was .a-offscreen',
+                '.a-text-price',
+                '#listPrice .a-offscreen',
+                '[data-cy="original-price"]'
+            ],
+            discount: [
+                '.a-badge-text',
+                '.savingsPercentage',
+                '.a-size-large.a-color-price',
+                '[data-cy="discount-percentage"]',
+                '.a-text-bold.a-color-price'
+            ]
+        };
 
-        // Extract original price
-        for (const selector of originalPriceSelectors) {
+        // Extract current/offer price
+        let currentPrice = '';
+        for (const selector of priceSelectors.current) {
             const price = $(selector).first().text().trim();
-            if (price && price.includes('$')) {
-                pricing.originalPrice = price;
+            console.log(`Trying current price selector "${selector}":`, price);
+            if (price && price.match(/\$[\d,]+\.?\d*/)) {
+                currentPrice = price;
+                console.log('Found current price:', currentPrice);
                 break;
             }
         }
 
-        // Extract offer price
-        for (const selector of offerPriceSelectors) {
+        // Extract original price (if different from current)
+        let originalPrice = '';
+        for (const selector of priceSelectors.original) {
             const price = $(selector).first().text().trim();
-            if (price && price.includes('$')) {
-                pricing.offerPrice = price;
+            console.log(`Trying original price selector "${selector}":`, price);
+            if (price && price.match(/\$[\d,]+\.?\d*/) && price !== currentPrice) {
+                originalPrice = price;
+                console.log('Found original price:', originalPrice);
                 break;
             }
         }
 
-        // If no original price found, use offer price as the main price
-        if (!pricing.originalPrice && pricing.offerPrice) {
-            pricing.originalPrice = pricing.offerPrice;
+        // Method 2: Try alternative price extraction from spans
+        if (!currentPrice) {
+            const spans = $('span').filter((i, el) => {
+                const text = $(el).text().trim();
+                return text.match(/^\$[\d,]+\.?\d*$/) && text.length < 15;
+            });
+            
+            spans.each((i, el) => {
+                const price = $(el).text().trim();
+                if (!currentPrice && price.match(/\$[\d,]+\.?\d*/)) {
+                    currentPrice = price;
+                    console.log('Found price from span:', currentPrice);
+                    return false;
+                }
+            });
+        }
+
+        // Set prices
+        if (currentPrice) {
+            pricing.offerPrice = currentPrice;
+        }
+        
+        if (originalPrice) {
+            pricing.originalPrice = originalPrice;
+        } else if (currentPrice) {
+            pricing.originalPrice = currentPrice;
         }
 
         // Extract discount percentage
-        const discountSelectors = [
-            '.a-badge-text',
-            '.savingsPercentage',
-            '[data-cy="discount-percentage"]',
-            '.a-size-large.a-color-price'
-        ];
-
-        for (const selector of discountSelectors) {
+        for (const selector of priceSelectors.discount) {
             const discount = $(selector).first().text().trim();
-            if (discount && discount.includes('%')) {
+            console.log(`Trying discount selector "${selector}":`, discount);
+            if (discount && discount.match(/\d+%/)) {
                 pricing.offerPercentage = discount;
+                console.log('Found discount:', discount);
                 break;
             }
         }
 
-        // Calculate amount saved if we have both prices
+        // Calculate savings if we have both prices
         if (pricing.originalPrice && pricing.offerPrice && pricing.originalPrice !== pricing.offerPrice) {
             try {
-                const original = parseFloat(pricing.originalPrice.replace(/[^0-9.]/g, ''));
-                const offer = parseFloat(pricing.offerPrice.replace(/[^0-9.]/g, ''));
-                const saved = original - offer;
-                if (saved > 0) {
-                    pricing.amountSaved = `$${saved.toFixed(2)}`;
+                const originalNum = parseFloat(pricing.originalPrice.replace(/[^0-9.]/g, ''));
+                const offerNum = parseFloat(pricing.offerPrice.replace(/[^0-9.]/g, ''));
+                
+                if (originalNum > offerNum) {
+                    const saved = originalNum - offerNum;
+                    pricing.amountSaved = `${saved.toFixed(2)}`;
                     
-                    // Calculate percentage if not already found
+                    // Calculate percentage if not found
                     if (!pricing.offerPercentage) {
-                        const percentage = Math.round((saved / original) * 100);
+                        const percentage = Math.round((saved / originalNum) * 100);
                         pricing.offerPercentage = `${percentage}% off`;
                     }
+                    
+                    console.log('Calculated savings:', pricing.amountSaved);
                 }
             } catch (error) {
                 console.warn('Error calculating savings:', error);
             }
         }
 
+        // Method 3: Try to find price in JSON-LD data
+        if (!currentPrice) {
+            const jsonLdScript = $('script[type="application/ld+json"]');
+            jsonLdScript.each((i, script) => {
+                try {
+                    const data = JSON.parse($(script).text());
+                    if (data.offers && data.offers.price) {
+                        pricing.offerPrice = `${data.offers.price}`;
+                        console.log('Found price in JSON-LD:', pricing.offerPrice);
+                    }
+                } catch (e) {
+                    // Ignore JSON parsing errors
+                }
+            });
+        }
+
+        console.log('Final pricing data:', pricing);
         return pricing;
     }
 
@@ -520,8 +588,15 @@ class ImageDownloader {
         this.downloadQueue = new Map();
     }
 
-    async downloadImage(imageUrl, productId, imageIndex) {
+    async downloadImage(imageUrl, productId, imageIndex, productTitle = '') {
         try {
+            // Create product-specific folder
+            const sanitizedTitle = this.sanitizeFileName(productTitle || `product-${productId}`);
+            const productFolder = path.join(DOWNLOADS_DIR, sanitizedTitle);
+            
+            // Ensure product folder exists
+            await fs.mkdir(productFolder, { recursive: true });
+
             const response = await axios({
                 method: 'get',
                 url: imageUrl,
@@ -534,17 +609,34 @@ class ImageDownloader {
 
             // Generate filename
             const extension = this.getImageExtension(imageUrl, response.headers['content-type']);
-            const filename = `product-${productId}-image-${imageIndex + 1}.${extension}`;
-            const filepath = path.join(DOWNLOADS_DIR, filename);
+            const filename = `image-${imageIndex + 1}.${extension}`;
+            const filepath = path.join(productFolder, filename);
 
             // Download and save the image
             const writer = createWriteStream(filepath);
             await pipelineAsync(response.data, writer);
 
+            // Also save product info as JSON in the same folder
+            const productInfoPath = path.join(productFolder, 'product-info.json');
+            const productInfo = {
+                productId,
+                title: productTitle,
+                downloadedAt: new Date().toISOString(),
+                imageUrl: imageUrl,
+                filename: filename
+            };
+            
+            try {
+                await fs.writeFile(productInfoPath, JSON.stringify(productInfo, null, 2));
+            } catch (jsonError) {
+                console.warn('Could not save product info JSON:', jsonError.message);
+            }
+
             return {
                 success: true,
                 filename,
                 filepath,
+                productFolder,
                 size: (await fs.stat(filepath)).size
             };
 
@@ -555,6 +647,16 @@ class ImageDownloader {
                 error: error.message
             };
         }
+    }
+
+    sanitizeFileName(fileName) {
+        // Remove or replace invalid characters for folder names
+        return fileName
+            .replace(/[<>:"/\\|?*]/g, '_') // Replace invalid chars with underscore
+            .replace(/\s+/g, '_') // Replace spaces with underscore
+            .replace(/_+/g, '_') // Replace multiple underscores with single
+            .replace(/^_|_$/g, '') // Remove leading/trailing underscores
+            .substring(0, 100); // Limit length to 100 characters
     }
 
     getImageExtension(url, contentType) {
@@ -622,13 +724,13 @@ app.post('/api/scrape', async (req, res) => {
 // Download image endpoint
 app.post('/api/download-image', async (req, res) => {
     try {
-        const { url, productId, index } = req.body;
+        const { url, productId, index, productTitle } = req.body;
 
         if (!url || productId === undefined || index === undefined) {
             return res.status(400).json({ error: 'Missing required parameters' });
         }
 
-        const result = await imageDownloader.downloadImage(url, productId, index);
+        const result = await imageDownloader.downloadImage(url, productId, index, productTitle);
 
         if (result.success) {
             // Send the file as response
@@ -638,10 +740,10 @@ app.post('/api/download-image', async (req, res) => {
             const fileStream = require('fs').createReadStream(result.filepath);
             fileStream.pipe(res);
             
-            // Clean up file after sending (optional)
-            fileStream.on('end', () => {
-                fs.unlink(result.filepath).catch(console.error);
-            });
+            // Don't delete file immediately - keep it in the product folder
+            // fileStream.on('end', () => {
+            //     fs.unlink(result.filepath).catch(console.error);
+            // });
         } else {
             res.status(500).json({ error: result.error });
         }

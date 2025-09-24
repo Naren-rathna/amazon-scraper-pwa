@@ -303,7 +303,12 @@ class AmazonScraperApp {
                 const response = await fetch('/api/download-image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: image.url, productId: product.id, index: i })
+                    body: JSON.stringify({ 
+                        url: image.url, 
+                        productId: product.id, 
+                        index: i,
+                        productTitle: product.title 
+                    })
                 });
 
                 if (response.ok) {
@@ -313,7 +318,7 @@ class AmazonScraperApp {
                     // Auto-download
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `product-${product.id}-image-${i + 1}.jpg`;
+                    a.download = `${this.sanitizeFileName(product.title)}-image-${i + 1}.jpg`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -330,7 +335,17 @@ class AmazonScraperApp {
             }
         }
 
-        this.showToast('Image downloads completed!', 'success');
+        this.showToast(`Images downloaded to folder: ${this.sanitizeFileName(product.title)}`, 'success');
+    }
+
+    sanitizeFileName(fileName) {
+        if (!fileName) return 'unknown-product';
+        return fileName
+            .replace(/[<>:"/\\|?*]/g, '_')
+            .replace(/\s+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '')
+            .substring(0, 50);
     }
 
     // ===== PRODUCT MANAGEMENT =====
